@@ -4,6 +4,8 @@ import random
 
 pygame.init()
 
+
+
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 MAP_WIDTH = 2000
 
