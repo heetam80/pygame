@@ -1,25 +1,37 @@
-import pygame
 import sys
+import os
+import pygame
 import random
 
 pygame.init()
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 MAP_WIDTH = 2000
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("しょぼんのアクション風 - ハードモード")
+pygame.display.set_caption("pygame")
 clock = pygame.time.Clock()
 
 WHITE = (255, 255, 255)
-BLUE = (0, 100, 255)
 GRAY = (100, 100, 100)
 RED = (200, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (100, 100, 100)
 GOLD = (255, 215, 0)
+
+player_img = pygame.image.load(resource_path("img/player.png"))
+player_img = pygame.transform.scale(player_img, (40, 40))
+
+enemy_img = pygame.image.load(resource_path("img/enemy.png"))
+enemy_img = pygame.transform.scale(enemy_img, (40, 40))
 
 
 class Player:
@@ -27,7 +39,7 @@ class Player:
         self.rect = pygame.Rect(x, y, 40, 40)
         self.vel_y = 0
         self.on_ground = False
-        self.jump_count = 0  # ジャンプ回数
+        self.jump_count = 0
 
     def update(self, blocks):
         keys = pygame.key.get_pressed()
@@ -44,8 +56,8 @@ class Player:
 
         self.vel_y += 1
         if self.vel_y > 10:
-             self.vel_y  = 10                        
-        dy             = self.vel_y
+            self.vel_y = 10
+        dy = self.vel_y
 
         self.on_ground = False
         for block in blocks:
@@ -55,7 +67,7 @@ class Player:
                 if self.vel_y > 0:
                     self.rect.bottom = block.top
                     self.on_ground = True
-                    self.jump_count = 0  # 着地したらジャンプ回数リセット
+                    self.jump_count = 0
                     dy = 0
                 elif self.vel_y < 0:
                     self.rect.top = block.bottom
@@ -65,10 +77,11 @@ class Player:
         self.rect.y += dy
 
     def draw(self, screen, offset_x):
-        pygame.draw.rect(screen, BLUE, (self.rect.x - offset_x, self.rect.y, self.rect.width, self.rect.height))
+        screen.blit(player_img, (self.rect.x - offset_x, self.rect.y))
 
-class Enemy :
-    def       __init__(        self, x, y):
+
+class Enemy:
+    def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, 40, 40)
         self.direction = 1
         self.speed = random.randint(2, 6)
@@ -88,7 +101,8 @@ class Enemy :
             self.speed = random.randint(2, 6)
 
     def draw(self, screen, offset_x):
-        pygame.draw.rect(screen, RED, (self.rect.x - offset_x, self.rect.y, self.rect.width, self.rect.height))
+        screen.blit(enemy_img, (self.rect.x - offset_x, self.rect.y))
+
 
 class Spike:
     def __init__(self, x, y):
@@ -100,17 +114,18 @@ class Spike:
             (self.rect.centerx - offset_x, self.rect.top),
             (self.rect.right - offset_x, self.rect.bottom)
         ])
-        
+
+
 class PopUpSpike:
     def __init__(self, x, y):
         self.base_y = y
-        self.rect = pygame.Rect(x, y + 20, 40, 20)  # 最初は少し下にある（隠れてる状態）
+        self.rect = pygame.Rect(x, y + 20, 40, 20)
         self.active = False
         self.timer = 0
 
     def update(self, player):
         distance = abs(player.rect.centerx - self.rect.centerx)
-        if distance < 70:  # プレイヤーが近づいたら
+        if distance < 70:
             self.active = True
             self.timer += 1
         else:
@@ -119,11 +134,11 @@ class PopUpSpike:
 
         if self.active:
             if self.timer < 30:
-                self.rect.y = self.base_y + 10 - int(500 * (self.timer / 30)) 
+                self.rect.y = self.base_y + 10 - int(500 * (self.timer / 30))
             else:
-                self.rect.y = self.base_y - 20 
+                self.rect.y = self.base_y - 20
         else:
-            self.rect.y = self.base_y + 20 
+            self.rect.y = self.base_y + 20
 
     def draw(self, screen, offset_x):
         pygame.draw.polygon(screen, BLACK, [
@@ -143,13 +158,12 @@ class MovingSpike(Spike):
         if self.rect.left < 0 or self.rect.right > MAP_WIDTH:
             self.direction *= -1
 
+
 class FallingBlock:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, 50, 20)
         self.falling = False
         self.fall_speed = random.randint(5, 10)
-        
-        
 
     def update(self, player):
         if self.rect.colliderect(player.rect) and not self.falling:
@@ -160,6 +174,7 @@ class FallingBlock:
     def draw(self, screen, offset_x):
         pygame.draw.rect(screen, GREEN, (self.rect.x - offset_x, self.rect.y, self.rect.width, self.rect.height))
 
+
 def create_level():
     blocks = []
     for i in range(0, MAP_WIDTH, 50):
@@ -169,22 +184,22 @@ def create_level():
     blocks.append(pygame.Rect(1300, 350, 100, 20))
     return blocks
 
+
 player = Player(100, 300)
 blocks = create_level()
 
 enemies = [Enemy(x, 510) for x in (1200, 1400, 1600)]
-spikes = [Spike(x, 510 ) for x in (700, 800, 1000 )]
+spikes = [Spike(x, 510) for x in (700, 800, 1000)]
 moving_spikes = [MovingSpike(1600, 510)]
 
 falling_blocks = [
-    FallingBlock( 900, 300),
+    FallingBlock(900, 300),
     FallingBlock(1100, 250),
     FallingBlock(1300, 200),
     FallingBlock(1500, 150)
 ]
 
 popup_spikes = [PopUpSpike(1000, 510), PopUpSpike(1700, 510)]
-
 
 camera_x = 0
 
@@ -195,10 +210,9 @@ while True:
             sys.exit()
 
     player.update(blocks)
-    
+
     for pspike in popup_spikes:
         pspike.update(player)
-
 
     for enemy in enemies:
         enemy.update()
@@ -206,13 +220,12 @@ while True:
         fb.update(player)
     for mspike in moving_spikes:
         mspike.update()
-        
+
     for pspike in popup_spikes:
         if player.rect.colliderect(pspike.rect):
             print("飛び出すスパイクで死亡！")
             pygame.quit()
             sys.exit()
-
 
     camera_x = int(player.rect.centerx - SCREEN_WIDTH * 0.35)
     camera_x = max(0, min(camera_x, MAP_WIDTH - SCREEN_WIDTH))
@@ -240,22 +253,18 @@ while True:
     for enemy in enemies:
         enemy.draw(screen, camera_x)
     player.draw(screen, camera_x)
-    
     for pspike in popup_spikes:
         pspike.draw(screen, camera_x)
-
 
     goal = pygame.Rect(1900, 500, 50, 50)
     pygame.draw.rect(screen, GOLD, (goal.x - camera_x, goal.y, goal.width, goal.height))
     if player.rect.colliderect(goal):
         font = pygame.font.SysFont("meiryo", 60)
         message = font.render("ゲームクリア！おめでとう！", True, (0, 0, 0))
-        
         screen.fill(WHITE)
         screen.blit(message, ((SCREEN_WIDTH - message.get_width()) // 2, SCREEN_HEIGHT // 2 - 50))
         pygame.display.update()
-        
-        pygame.time.wait(3000)  
+        pygame.time.wait(3000)
         pygame.quit()
         sys.exit()
 
